@@ -4,22 +4,23 @@
 # Package imports #
 # --------------- #
 
+import pandas as pd
 from airflow import Dataset
 from airflow.decorators import dag, task
 from pendulum import datetime
-import pandas as pd
-
-# -------------------- #
-# Local module imports #
-# -------------------- #
 
 from include.global_variables import airflow_conf_variables as gv
 from include.global_variables import constants as c
 from include.global_variables import user_input_variables as uv
 from include.meterology_utils import (
-    get_lat_long_for_cityname,
     get_current_weather_from_city_coordinates,
+    get_lat_long_for_cityname,
 )
+
+# -------------------- #
+# Local module imports #
+# -------------------- #
+
 
 # -------- #
 # Datasets #

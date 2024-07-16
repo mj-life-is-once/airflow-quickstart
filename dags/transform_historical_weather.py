@@ -105,9 +105,10 @@ def transform_historical_weather():
 
         ####### YOUR TRANSFORMATION ##########
         input_df["time"] = pd.to_datetime(input_df["time"])
-        output_df = input_df[
-            [input_df["time"].dt.year == birthyear] and [input_df["city"] == uv.MY_CITY]
-        ]
+        output_df = input_df[input_df["time"].dt.year == birthyear]
+        output_df = output_df[output_df["city"] == uv.MY_CITY]
+        # filter the temperature greater than uv.HOT_DAY
+        # output_df = output_df[output_df["temperature_2m_max"] > uv.HOT_DAY]
 
         # remove lat, log
         output_df = output_df.drop(columns=["lat", "long"])
@@ -121,7 +122,9 @@ def transform_historical_weather():
         )
         # change datetime format
         output_df["Time"] = output_df["Time"].dt.strftime("%Y-%m-%d")
-
+        # output_df["Max Temperature"] = output_df["Max Temperature"].astype(float)
+        # filter the temperature greater than uv.HOT_DAY
+        # output_df = output_df[output_df["Max Temperature"] > uv.HOT_DAY]
         # drop previous table
         cursor.sql(f"DROP TABLE IF EXISTS {output_table_name}")
         # saving the output_df to a new table
