@@ -4,24 +4,25 @@
 # PACKAGE IMPORTS #
 # --------------- #
 
-from airflow.decorators import dag, task
-from airflow.datasets import Dataset
-from pendulum import datetime
 import pandas as pd
+from airflow.datasets import Dataset
+from airflow.decorators import dag, task
 
 # import tools from the Astro SDK
 from astro import sql as aql
+from pendulum import datetime
+
+from include.global_variables import airflow_conf_variables as gv
+from include.global_variables import constants as c
+from include.meterology_utils import (
+    get_historical_weather_from_city_coordinates,
+    get_lat_long_for_cityname,
+)
 
 # -------------------- #
 # Local module imports #
 # -------------------- #
 
-from include.global_variables import airflow_conf_variables as gv
-from include.global_variables import constants as c
-from include.meterology_utils import (
-    get_lat_long_for_cityname,
-    get_historical_weather_from_city_coordinates,
-)
 
 # --- #
 # DAG #
@@ -43,11 +44,12 @@ def turn_json_into_table(in_json):
 # ---------- #
 # Schedule this DAG to run as soon as the 'start' DAG has finished running.
 # Tip: Look at how the 'extract_current_weather_data' DAG is scheduled.
+start_dataset = Dataset("start")
 
 
 @dag(
     start_date=datetime(2023, 1, 1),
-    schedule=None,
+    schedule=[start_dataset],
     catchup=False,
     default_args=gv.default_args,
     description="DAG that retrieves weather information and saves it to a local JSON.",
@@ -84,8 +86,10 @@ def extract_historical_weather_data():
     # to retrieve historical weather data for.
     # Tip: This task can be accomplished by using Dynamic Task Mapping and you only need to modify two lines of code.
 
-    coordinates = get_lat_long_for_city(city="Bern")
-    historical_weather = get_historical_weather(coordinates=coordinates)
+    historical_weather = []
+    for city in ["London", "Bern", "Geneva", "Zurich"]:
+        coordinates = get_lat_long_for_city(city=city)
+        historical_weather.append(get_historical_weather(coordinates=coordinates))
 
     @task(
         outlets=[Dataset("duckdb://include/dwh/historical_weather_data")],

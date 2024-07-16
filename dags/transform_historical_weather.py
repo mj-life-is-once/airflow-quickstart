@@ -4,21 +4,23 @@
 # PACKAGE IMPORTS #
 # --------------- #
 
-from airflow.decorators import dag, task
-from pendulum import datetime
 import pandas as pd
+from airflow.datasets import Dataset
+from airflow.decorators import dag, task
 
 # import tools from the Astro SDK
 from astro import sql as aql
 from astro.sql.table import Table
+from pendulum import datetime
+
+from include.global_variables import airflow_conf_variables as gv
+from include.global_variables import constants as c
+from include.global_variables import user_input_variables as uv
 
 # -------------------- #
 # Local module imports #
 # -------------------- #
 
-from include.global_variables import airflow_conf_variables as gv
-from include.global_variables import user_input_variables as uv
-from include.global_variables import constants as c
 
 # ----------------- #
 # Astro SDK Queries #
@@ -49,12 +51,13 @@ def create_historical_weather_reporting_table(in_table: Table, hot_day_celsius: 
 # ---------- #
 # Schedule this DAG to run as soon as the 'extract_historical_weather_data' DAG has finished running.
 # Tip: You will need to use the dataset feature.
+historical_dataset = Dataset("duckdb://include/dwh/historical_weather_data")
 
 
 @dag(
     start_date=datetime(2023, 1, 1),
     # this DAG runs as soon as the climate and weather data is ready in DuckDB
-    schedule=None,
+    schedule=[historical_dataset],
     catchup=False,
     default_args=gv.default_args,
     description="Runs transformations on climate and current weather data in DuckDB.",
@@ -101,7 +104,10 @@ def transform_historical_weather():
         ).df()
 
         ####### YOUR TRANSFORMATION ##########
-
+        # input_df["time"] = pd.to_datetime(input_df["time"], format="%Y-%m-%d")
+        # output_df = input_df[input_df["time"].dt.year == birthyear]
+        # # remove lat, log
+        # output_df = output_df.drop(columns=["lat", "lon"])
         output_df = input_df
 
         # saving the output_df to a new table
